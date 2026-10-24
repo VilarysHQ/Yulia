@@ -2,14 +2,17 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import { env } from './config/env.js';
+import { requireAllowedOrigin } from './csrf.js';
 import { createMvpRouter } from './mvp.js';
 import { createChatRouter } from './chat.js';
+import { createTeacherRouter } from './teacher.js';
 
 export function createApp(options = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet());
-  app.use(cors({ origin: env.WEB_ORIGIN, credentials: true }));
+  app.use(cors({ origin: env.ALLOWED_ORIGINS, credentials: true }));
+  app.use(requireAllowedOrigin(env.ALLOWED_ORIGINS));
   app.use(express.json({ limit: '32kb' }));
 
   app.get('/api/health', (_request, response) => {
@@ -21,6 +24,7 @@ export function createApp(options = {}) {
   });
 
   app.use('/api', createMvpRouter(options));
+  app.use('/api/teacher', createTeacherRouter());
   app.use('/api', createChatRouter(options));
 
   app.use('/api', (_request, response) => {

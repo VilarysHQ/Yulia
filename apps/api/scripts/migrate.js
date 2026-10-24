@@ -2,6 +2,13 @@ import { readdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve, dirname } from 'node:path';
 import { pool } from '../src/db.js';
+import { env } from '../src/config/env.js';
+import { validateDatabaseTarget } from '../src/config/database-target.js';
+
+if (env.NODE_ENV === 'production') {
+  throw new Error('Las migraciones de producción requieren un procedimiento manual separado');
+}
+validateDatabaseTarget(env);
 
 const directory = resolve(dirname(fileURLToPath(import.meta.url)), '../../../database/migrations');
 const files = (await readdir(directory)).filter((name) => /^\d+_.*\.sql$/.test(name)).sort();

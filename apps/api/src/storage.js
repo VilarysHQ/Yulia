@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { env } from './config/env.js';
+import { storageWritesAvailable } from './config/storage-policy.js';
 
 export const MAX_COVER_BYTES = 2 * 1024 * 1024;
 
@@ -91,11 +92,16 @@ function createStorageClient() {
   const baseUrl = env.SUPABASE_URL?.replace(/\/+$/, '');
   const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
   const bucket = env.SUPABASE_STORAGE_BUCKET;
-  const available = Boolean(baseUrl && serviceKey);
+  const available = storageWritesAvailable(env.NODE_ENV, baseUrl, serviceKey);
 
   const headers = () => ({ apikey: serviceKey, Authorization: `Bearer ${serviceKey}` });
 
   async function request(path, options = {}) {
+    if (!available) {
+      const error = new Error('Las escrituras de Storage no están disponibles en desarrollo o pruebas');
+      error.status = 503;
+      throw error;
+    }
     const response = await fetch(`${storageApiBase(baseUrl)}${path}`, {
       ...options,
       headers: { ...headers(), ...options.headers },
@@ -111,7 +117,7 @@ function createStorageClient() {
   return {
     available,
     publicUrl(path) {
-      if (!available || !path) return null;
+      if (!baseUrl || !path) return null;
       return `${storageApiBase(baseUrl)}/object/public/${encodeURIComponent(bucket)}/${encodePath(path)}`;
     },
     async createSignedUpload(path) {

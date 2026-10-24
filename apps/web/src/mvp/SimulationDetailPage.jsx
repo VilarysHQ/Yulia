@@ -15,6 +15,7 @@ import { api } from './api';
 import { useAuth } from './AuthContext';
 import { downloadConversationExport } from './conversationExport';
 import { clearGeminiKey, getGeminiKey, setGeminiKey } from './geminiKey';
+import { ProtectedSimulationContent } from './ProtectedSimulationContent';
 
 const timeFormatter = new Intl.DateTimeFormat('es', { hour: '2-digit', minute: '2-digit' });
 
@@ -45,6 +46,7 @@ export function SimulationDetailPage() {
   const [confirmFinish, setConfirmFinish] = useState(false);
   const endRef = useRef(null);
   const completed = session?.status === 'completed';
+  const protectTutorContent = user?.role === 'student';
   useEffect(() => {
     let active = true;
     Promise.all([api(`/simulations/${simulationId}`), api(`/simulations/${simulationId}/session`)])
@@ -214,9 +216,9 @@ export function SimulationDetailPage() {
                 <ChevronDown className="sim-acc-chevron" size={18} aria-hidden="true" />
               </button>
               <div className="sim-acc-panel">
-                <div className="sim-acc-content">
+                <ProtectedSimulationContent className="sim-acc-content" enabled={protectTutorContent}>
                   <RichText content={simulation.scenario} />
-                </div>
+                </ProtectedSimulationContent>
               </div>
             </section>
 
@@ -235,9 +237,9 @@ export function SimulationDetailPage() {
                 <ChevronDown className="sim-acc-chevron" size={18} aria-hidden="true" />
               </button>
               <div className="sim-acc-panel">
-                <div className="sim-acc-content">
+                <ProtectedSimulationContent className="sim-acc-content" enabled={protectTutorContent}>
                   <RichText content={simulation.objective} />
-                </div>
+                </ProtectedSimulationContent>
               </div>
             </section>
 
@@ -256,14 +258,14 @@ export function SimulationDetailPage() {
                 <ChevronDown className="sim-acc-chevron" size={18} aria-hidden="true" />
               </button>
               <div className="sim-acc-panel">
-                <div className="sim-acc-content sim-acc-content-guide">
+                <ProtectedSimulationContent className="sim-acc-content sim-acc-content-guide" enabled={protectTutorContent}>
                   <p>Responde con tu razonamiento como si atendieras el caso. Yulia te hará preguntas, dará pistas y retroalimentará tus respuestas.</p>
                   <ul>
                     <li>Escribe con tus propias palabras.</li>
                     <li>Justifica tus decisiones clínicas.</li>
                     <li>Usa <kbd>Enter</kbd> para enviar y <kbd>Shift</kbd>+<kbd>Enter</kbd> para una línea nueva.</li>
                   </ul>
-                </div>
+                </ProtectedSimulationContent>
               </div>
             </section>
 
@@ -396,7 +398,13 @@ export function SimulationDetailPage() {
                         )}
                         <div className={`sim-bubble ${isStudent ? 'sim-bubble-student' : 'sim-bubble-tutor'}`}>
                           <p className="sim-bubble-label">{isStudent ? 'Tú' : 'Yulia IA'}</p>
-                          <p className="sim-bubble-text">{message.content}</p>
+                          <ProtectedSimulationContent
+                            as="p"
+                            className="sim-bubble-text"
+                            enabled={protectTutorContent && !isStudent}
+                          >
+                            {message.content}
+                          </ProtectedSimulationContent>
                           {time ? <time className="sim-bubble-time" dateTime={message.createdAt}>{time}</time> : null}
                         </div>
                       </div>

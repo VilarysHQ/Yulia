@@ -9,15 +9,17 @@ import { CoursesPage } from './mvp/CoursesPage';
 import { HomePage } from './mvp/HomePage';
 import { MvpShell } from './mvp/MvpShell';
 import { RouteGuard } from './mvp/RouteGuard';
+import { ScrollToTop } from './mvp/ScrollToTop';
 import { SimulationDetailPage } from './mvp/SimulationDetailPage';
 import { SimulationEditorPage } from './mvp/SimulationEditorPage';
 import { VideoDetailPage } from './mvp/VideoDetailPage';
 import { VideoEditorPage } from './mvp/VideoEditorPage';
 import { VideosPage } from './mvp/VideosPage';
+import { TeacherTrackingPage } from './mvp/TeacherTrackingPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 export function App() {
-  return <ToastProvider><AuthProvider><Routes>
+  return <ToastProvider><AuthProvider><ScrollToTop /><Routes>
     <Route element={<MvpShell />}>
       <Route path="/" element={<HomePage />} />
       <Route path="/acerca" element={<AboutPage />} />
@@ -28,6 +30,7 @@ export function App() {
       <Route path="/videos/:videoId" element={<VideoDetailPage />} />
       <Route element={<RouteGuard role="teacher" />}>
         <Route path="/docente" element={<CoursesPage />} />
+        <Route path="/docente/seguimiento" element={<TeacherTrackingPage />} />
         <Route path="/docente/cursos/nuevo" element={<CourseEditorPage />} />
         <Route path="/docente/cursos/:courseId" element={<CoursePage />} />
         <Route path="/docente/cursos/:courseId/editar" element={<CourseEditorPage />} />

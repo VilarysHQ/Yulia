@@ -10,22 +10,26 @@ Aplicación React/Vite y API Express con PostgreSQL. Docentes crean cursos y sim
 
 ## Arranque local
 
-1. Crea una base PostgreSQL vacía, por ejemplo `bioquimica_nutricional`.
-2. Copia `.env.example` a `apps/api/.env` y configura `DATABASE_URL` y un `JWT_SECRET` aleatorio de al menos 32 caracteres. La API carga ese archivo desde `apps/api`. Para las portadas de curso añade también `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y, si usas otro nombre, `SUPABASE_STORAGE_BUCKET`.
+1. Usa la base local `yulia_dev` en `127.0.0.1:5432`. No uses la base de producción ni la copia con datos reales para pruebas de integración.
+2. Configura `apps/api/.env` con `DATABASE_URL=postgresql://postgres:<contraseña-local>@127.0.0.1:5432/yulia_dev`, `DATABASE_SSL=false` y un `JWT_SECRET` local. Codifica en formato URL los símbolos especiales de la contraseña. No pongas secretos en archivos versionados. La API rechaza destinos remotos y variables heredadas que difieran de este archivo.
 3. Ejecuta `pnpm install`.
-4. Ejecuta `pnpm db:migrate`. El script aplica las migraciones pendientes una sola vez y conserva los datos en ejecuciones posteriores.
-5. Ejecuta `pnpm dev` y abre `http://localhost:5173`.
+4. Si la base es una restauración existente, revisa sus migraciones antes de aplicar cambios. En esta etapa no ejecutes `pnpm db:migrate` sobre `yulia_dev`.
+5. Ejecuta `pnpm dev` y abre `http://localhost:5173` cuando hayas configurado la contraseña local.
 
 La web usa `http://localhost:3001/api` por defecto. Para otra URL, crea `apps/web/.env` con `VITE_API_URL` antes de iniciar Vite. Permite cookies y configura `WEB_ORIGIN` con el origen exacto de la web.
 
+En producción, configura `JWT_SECRET` explícitamente con un valor aleatorio propio de al menos 32 caracteres y `WEB_ORIGIN` con el origen HTTPS exacto del frontend. La API rechaza secretos de ejemplo y no carga el archivo local `.env` en producción. Si hay varios frontends autorizados, usa `WEB_ORIGINS` como lista completa separada por comas; sustituye `WEB_ORIGIN`, no lo amplía. No uses rutas, comodines ni `null`. CORS y la protección CSRF usan esa misma lista. Todas las peticiones `POST`, `PUT`, `PATCH` y `DELETE`, incluidas las públicas como registro e inicio de sesión, requieren un encabezado `Origin` que coincida exactamente. Los clientes no navegador deben enviarlo explícitamente. `GET`, `HEAD` y preflight `OPTIONS` mantienen su comportamiento habitual. Verifica que las variables de Vercel apunten al frontend y a la base de producción correctos antes de desplegar.
+
+Para los dos proyectos de Vercel, usa `apps/web` como Root Directory del frontend Vite (`dist` como Output Directory) y `apps/api` para Express. `apps/web/vercel.json` reescribe las rutas de React Router a `/index.html`. Variables por entorno: frontend `VITE_API_URL` con la URL HTTPS pública de la API terminada en `/api`; backend `NODE_ENV=production`, `DATABASE_URL` de PostgreSQL de producción, `DATABASE_SSL` según la conexión de Supabase, `JWT_SECRET` existente, y `WEB_ORIGIN` o `WEB_ORIGINS` con el origen HTTPS exacto del frontend. Para portadas de curso en producción, configura `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y, si corresponde, `SUPABASE_STORAGE_BUCKET`. `GEMINI_MODEL` es opcional. Verifica los valores en Vercel sin copiarlos al repositorio; en especial, confirma que la URL de base de datos no apunta a `yulia_dev` ni a `yulia_test`.
+
 ## Portadas de curso
 
-Las portadas se suben directamente desde el navegador a Supabase Storage con una URL firmada. La API solo guarda la ruta del archivo y usa la service role key en el servidor; esa clave nunca llega al navegador.
+En producción, las portadas se suben directamente desde el navegador a Supabase Storage con una URL firmada. La API usa la service role key solo en producción. En desarrollo y pruebas se muestran las URLs públicas existentes, pero crear, confirmar o eliminar portadas está deshabilitado.
 
 1. Crea un bucket público llamado `course-covers`.
 2. Limita el bucket a 2 MB y a los tipos `image/jpeg`, `image/png` e `image/webp`.
 3. No añadas políticas de escritura pública: las subidas se autorizan con URLs firmadas generadas por el backend.
-4. Configura `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` en `apps/api/.env` y reinicia la API.
+4. Configura `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` solo en el entorno de producción. En local, `SUPABASE_URL` basta para mostrar portadas públicas existentes.
 
 ## Recorrido de prueba
 
@@ -43,7 +47,7 @@ La clave de Gemini se guarda temporalmente en `sessionStorage` para la pestaña 
 
 ## Verificación
 
-`pnpm check` compila web/API y ejecuta pruebas. Con `DATABASE_URL` configurada, las pruebas de integración verifican el recorrido docente–estudiante, el contexto del chat, la persistencia después de reiniciar el servidor y el aislamiento entre estudiantes. La prueba automática del chat usa un proveedor simulado; para verificar una respuesta real se necesita una API key propia de Gemini.
+`pnpm --filter @bioquimica/api test:unit` ejecuta pruebas puras sin base de datos. Para ejecutar `pnpm test` o `pnpm check`, primero crea manualmente la base vacía `yulia_test`, copia `apps/api/.env.test.example` a `apps/api/.env.test` y configura allí la contraseña local. Revisa que el destino sea `127.0.0.1:5432/yulia_test`; con `NODE_ENV=test`, aplica las migraciones explícitamente mediante `pnpm db:migrate` solo después de esa comprobación. La suite de integración crea y borra registros de prueba, por lo que nunca debe usar `yulia_dev` ni una base remota. Si falta `.env.test` o se hereda una URL distinta, el comando falla antes de ejecutar los tests. La prueba automática del chat usa un proveedor simulado; para verificar una respuesta real se necesita una API key propia de Gemini.
 
 ## Datos
 

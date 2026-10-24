@@ -2832,6 +2832,12 @@
     @apply whitespace-pre-wrap text-sm leading-6 text-[#173b6c];
   }
 
+  .sim-copy-protected,
+  .sim-copy-protected * {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
   .sim-bubble-time {
     @apply mt-1 self-end text-[10px] font-normal text-[#9aa8b4];
   }

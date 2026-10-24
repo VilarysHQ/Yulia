@@ -72,6 +72,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
     sm: 'max-w-md',
     md: 'max-w-xl',
     lg: 'max-w-3xl',
+    xl: 'max-w-5xl',
   };
 
   return createPortal(

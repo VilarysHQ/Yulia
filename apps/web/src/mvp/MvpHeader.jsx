@@ -11,7 +11,9 @@ export function MvpHeader() {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef(null);
-  const active = location.pathname === '/'
+  const active = location.pathname.startsWith('/docente/seguimiento')
+    ? 'tracking'
+    : location.pathname === '/'
     ? 'home'
     : location.pathname.startsWith('/acerca')
       ? 'about'
@@ -30,6 +32,7 @@ export function MvpHeader() {
     { key: 'courses', to: '/cursos', label: 'Cursos', current: 'page' },
     { key: 'videos', to: '/videos', label: 'Videos', current: 'page' },
     { key: 'about', to: '/acerca', label: 'Acerca de', current: 'page' },
+    ...(isTeacher ? [{ key: 'tracking', to: '/docente/seguimiento', label: 'Seguimiento académico', current: 'page' }] : []),
   ];
 
   const handleLogout = async () => {

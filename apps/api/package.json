@@ -4,11 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/server.js",
+    "dev": "node scripts/run-dev.js",
     "start": "node src/server.js",
     "db:migrate": "node scripts/migrate.js",
     "build": "node scripts/verify-build.js",
-    "test": "node --test"
+    "test": "node scripts/run-tests.js",
+    "test:unit": "node --test test/database-target.test.js test/storage-policy.test.js"
   },
   "dependencies": {
     "@bioquimica/shared": "workspace:*",

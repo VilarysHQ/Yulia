@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { createApp } from '../src/app.js';
+import { env } from '../src/config/env.js';
 import { query } from '../src/db.js';
 import { createTestTeacher } from '../test-support/helpers.js';
 
 const PASSWORD = 'Password123!';
 
-test('el registro público solo crea estudiantes y conserva el login docente', { skip: !process.env.DATABASE_URL }, async () => {
+test('el registro público solo crea estudiantes y conserva el login docente', { skip: process.env.NODE_ENV !== 'test' }, async () => {
   const marker = randomUUID();
   const userIds = [];
   let server;
@@ -16,7 +17,7 @@ test('el registro público solo crea estudiantes y conserva el login docente', {
   const call = async (path, method = 'GET', body, cookie) => {
     const response = await fetch(`${base}${path}`, {
       method,
-      headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
+      headers: { 'Content-Type': 'application/json', Origin: env.ALLOWED_ORIGINS[0], ...(cookie ? { Cookie: cookie } : {}) },
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
     const data = response.status === 204 ? null : await response.json().catch(() => null);

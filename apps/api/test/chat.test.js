@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { createApp } from '../src/app.js';
+import { env } from '../src/config/env.js';
 import { query } from '../src/db.js';
 import { createTestTeacher } from '../test-support/helpers.js';
 
-test('chat persistente, contexto y aislamiento entre estudiantes', { skip: !process.env.DATABASE_URL }, async () => {
+test('chat persistente, contexto y aislamiento entre estudiantes', { skip: process.env.NODE_ENV !== 'test' }, async () => {
   const marker = randomUUID();
   const generated = [];
   const generate = async (request) => {
@@ -19,7 +20,7 @@ test('chat persistente, contexto y aislamiento entre estudiantes', { skip: !proc
   await new Promise((resolve) => server.once('listening', resolve));
   let base = `http://127.0.0.1:${server.address().port}/api`;
   const call = async (path, method = 'GET', body, cookie) => {
-    const response = await fetch(`${base}${path}`, { method, headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    const response = await fetch(`${base}${path}`, { method, headers: { 'Content-Type': 'application/json', Origin: env.ALLOWED_ORIGINS[0], ...(cookie ? { Cookie: cookie } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
     return { status: response.status, data: response.status === 204 ? null : await response.json(), cookie: response.headers.get('set-cookie')?.split(';')[0] };
   };
   let courseId; let simulationId; let sessionId;

@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { createApp } from '../src/app.js';
+import { env } from '../src/config/env.js';
 import { query } from '../src/db.js';
 import { createTestTeacher } from '../test-support/helpers.js';
 
-test('flujo persistente docente → estudiante y permisos', { skip: !process.env.DATABASE_URL }, async () => {
+test('flujo persistente docente → estudiante y permisos', { skip: process.env.NODE_ENV !== 'test' }, async () => {
   const marker = randomUUID();
   const created = { users: [], course: null, simulation: null };
   let server;
@@ -17,7 +18,7 @@ test('flujo persistente docente → estudiante y permisos', { skip: !process.env
   };
   const stop = async () => new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   const call = async (path, method = 'GET', body, cookie) => {
-    const response = await fetch(`${base}${path}`, { method, headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    const response = await fetch(`${base}${path}`, { method, headers: { 'Content-Type': 'application/json', Origin: env.ALLOWED_ORIGINS[0], ...(cookie ? { Cookie: cookie } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
     const data = response.status === 204 ? null : await response.json();
     return { status: response.status, data, cookie: response.headers.get('set-cookie')?.split(';')[0] };
   };
@@ -113,7 +114,7 @@ function newHarness() {
     async call(path, method = 'GET', body, cookie) {
       const response = await fetch(`${base}${path}`, {
         method,
-        headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
+        headers: { 'Content-Type': 'application/json', Origin: env.ALLOWED_ORIGINS[0], ...(cookie ? { Cookie: cookie } : {}) },
         ...(body ? { body: JSON.stringify(body) } : {}),
       });
       const data = response.status === 204 ? null : await response.json().catch(() => null);
@@ -216,7 +217,7 @@ async function teardown(harness) {
   for (const id of harness.users) { try { await query('DELETE FROM users WHERE id = $1', [id]); } catch { /* ya eliminado */ } }
 }
 
-test('el docente borra simulaciones: historial, aislamiento y permisos', { skip: !process.env.DATABASE_URL }, async () => {
+test('el docente borra simulaciones: historial, aislamiento y permisos', { skip: process.env.NODE_ENV !== 'test' }, async () => {
   const marker = randomUUID();
   const harness = newHarness();
   await harness.start();
@@ -260,7 +261,7 @@ test('el docente borra simulaciones: historial, aislamiento y permisos', { skip:
   }
 });
 
-test('el docente borra cursos: contenido, inscripciones, historial y usuarios', { skip: !process.env.DATABASE_URL }, async () => {
+test('el docente borra cursos: contenido, inscripciones, historial y usuarios', { skip: process.env.NODE_ENV !== 'test' }, async () => {
   const marker = randomUUID();
   const harness = newHarness();
   await harness.start();

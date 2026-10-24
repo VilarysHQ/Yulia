@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { createApp } from '../src/app.js';
+import { env } from '../src/config/env.js';
 import { query } from '../src/db.js';
 import { MAX_COVER_BYTES } from '../src/storage.js';
 import { createTestTeacher } from '../test-support/helpers.js';
@@ -51,7 +52,7 @@ function fakeStorage() {
   };
 }
 
-test('portadas de curso: permisos, validación, publicación y limpieza', { skip: !process.env.DATABASE_URL }, async () => {
+test('portadas de curso: permisos, validación, publicación y limpieza', { skip: process.env.NODE_ENV !== 'test' }, async () => {
   const marker = randomUUID();
   const storage = fakeStorage();
   const userIds = [];
@@ -62,7 +63,7 @@ test('portadas de curso: permisos, validación, publicación y limpieza', { skip
   const call = async (path, method = 'GET', body, cookie) => {
     const response = await fetch(`${base}${path}`, {
       method,
-      headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
+      headers: { 'Content-Type': 'application/json', Origin: env.ALLOWED_ORIGINS[0], ...(cookie ? { Cookie: cookie } : {}) },
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
     const data = response.status === 204 ? null : await response.json().catch(() => null);
