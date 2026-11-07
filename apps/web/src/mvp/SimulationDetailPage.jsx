@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, CheckCircle2, ChevronDown, ClipboardList, Download, ExternalLink, KeyRound,
-  Lightbulb, MessageCircle, Send, Sparkles, Target, UserRound,
+  Lightbulb, MessageCircle, Send, ShieldAlert, Sparkles, Target, UserRound,
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Message } from '../components/ui/Message';
@@ -44,7 +44,9 @@ export function SimulationDetailPage() {
   const [objectiveOpen, setObjectiveOpen] = useState(true);
   const [guideOpen, setGuideOpen] = useState(false);
   const [confirmFinish, setConfirmFinish] = useState(false);
+  const [pasteWarningOpen, setPasteWarningOpen] = useState(false);
   const endRef = useRef(null);
+  const answerRef = useRef(null);
   const completed = session?.status === 'completed';
   const protectTutorContent = user?.role === 'student';
   useEffect(() => {
@@ -61,6 +63,17 @@ export function SimulationDetailPage() {
     return () => { active = false; };
   }, [simulationId]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, [messages.length]);
+  useEffect(() => {
+    const input = answerRef.current;
+    if (!input || !protectTutorContent) return undefined;
+    const onBeforeInput = (event) => {
+      if (!event.inputType?.startsWith('insertFromPaste')) return;
+      event.preventDefault();
+      setPasteWarningOpen(true);
+    };
+    input.addEventListener('beforeinput', onBeforeInput);
+    return () => input.removeEventListener('beforeinput', onBeforeInput);
+  }, [session, protectTutorContent]);
 
   async function testKey(event) {
     event.preventDefault();
@@ -121,6 +134,17 @@ export function SimulationDetailPage() {
 
   function closeFinish() {
     if (!busy) setConfirmFinish(false);
+  }
+
+  function blockPaste(event) {
+    event.preventDefault();
+    setPasteWarningOpen(true);
+  }
+
+  function blockPasteShortcut(event) {
+    if (event.isComposing || event.nativeEvent.isComposing) return;
+    if (((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v')
+      || (event.shiftKey && event.key === 'Insert')) blockPaste(event);
   }
 
   async function send(event) {
@@ -437,11 +461,16 @@ export function SimulationDetailPage() {
                   {error ? <Message tone="error" className="sim-msg">{error} {session && !completed && draft.trim() ? 'Puedes reintentar el envío.' : null}</Message> : null}
                   <div className="sim-composer-box">
                     <textarea
+                      ref={answerRef}
                       rows={1}
                       maxLength={4000}
                       value={draft}
                       onChange={(event) => setDraft(event.target.value)}
+                      onPaste={protectTutorContent ? blockPaste : undefined}
+                      onDrop={protectTutorContent ? (event) => event.preventDefault() : undefined}
                       onKeyDown={(event) => {
+                        if (protectTutorContent) blockPasteShortcut(event);
+                        if (event.defaultPrevented || event.isComposing || event.nativeEvent.isComposing) return;
                         if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); send(); }
                       }}
                       placeholder={completed ? 'La simulación está finalizada' : 'Escribe tu respuesta…'}
@@ -471,6 +500,18 @@ export function SimulationDetailPage() {
           </section>
         </div>
       </div>
+
+      <Modal
+        open={pasteWarningOpen}
+        onClose={() => setPasteWarningOpen(false)}
+        title={<span className="sim-paste-title"><span className="sim-paste-icon" aria-hidden="true"><ShieldAlert size={22} /></span>Pegado bloqueado</span>}
+        description="Se ha detectado un intento de pegar contenido durante tu simulación."
+        size="sm"
+        footer={<Button onClick={() => setPasteWarningOpen(false)} className="sim-paste-continue">Entendido, continuar simulación</Button>}
+      >
+        <p className="sim-paste-message">Por integridad académica, debes redactar tus respuestas directamente en Yulia.</p>
+        <p className="sim-paste-indicator"><ShieldAlert size={15} aria-hidden="true" />Acción no permitida</p>
+      </Modal>
 
       <Modal
         open={confirmFinish}
