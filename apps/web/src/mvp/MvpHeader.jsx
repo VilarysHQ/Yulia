@@ -73,7 +73,7 @@ export function MvpHeader() {
         <div className="mvp-brand-wrap">
           <Link to="/" className="mvp-brand" aria-label="Bromatología y Nutrición. Ir al inicio">
             <img src={yuliaLogo} alt="" className="mvp-brand-logo" />
-            <span className="mvp-brand-text">Bromatología y Nutrición</span>
+            <span className="mvp-brand-text">Yumibiotic SAC</span>
           </Link>
           {isTeacher ? (
             <span className="mvp-teacher-badge">
